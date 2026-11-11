@@ -13,8 +13,7 @@ How to use:
 
 - [ ] Fix the encoding bug in `Agent.md/scripts/sync-agent-rules.ps1` (`Get-Content -Encoding UTF8`) and add `safety.md`
 - [ ] Complete the truncated rules in the Agent.md repo (`engineering`, `quality`, `security`, `testing`)
-- [ ] First Git commit
-- [ ] Add a root README with run steps (short version now, full version in M9)
+- [ ] Rename the project folder from `Desktop/test` to `Desktop/homelab-dashboard` (stop dev servers and close VS Code first)
 - [ ] Draw final diagrams for the FYP proposal (architecture, ERD, flows) into `docs/`
 - [ ] Submit the FYP proposal
 

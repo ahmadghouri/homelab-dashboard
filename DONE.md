@@ -4,6 +4,12 @@ Completed tasks for the Homelab Dashboard. Newest first. Pending work is in [PEN
 
 ---
 
+## 2026-11-11 (GitHub)
+
+- [x] First commit pushed to https://github.com/ahmadghouri/homelab-dashboard (`main`)
+- [x] Added `.gitattributes` (LF line endings)
+- [x] Added root [README.md](README.md): problem, features, stack, architecture, setup, scripts, API, security, roadmap
+
 ## 2026-11-11 (M1: Auth + base layout)
 
 - [x] Server: `cookie-parser`, `jsonwebtoken`, `bcryptjs` (pure JS, no native build on Windows), `express-rate-limit`, `zod`
