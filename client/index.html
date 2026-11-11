@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Homelab Dashboard</title>
+    <script>
+      // Apply the saved theme before React loads, so the page does not flash.
+      // Keep the key and default in sync with src/hooks/useTheme.js.
+      (function () {
+        var theme = 'dark';
+        try {
+          theme = localStorage.getItem('homelab-theme') || 'dark';
+        } catch (error) {}
+        if (theme === 'system') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
