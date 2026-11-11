@@ -22,8 +22,8 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Agent backups (local test output)
-agent/backups/
-
 # Cloned rules source repo (rules are copied into .claude/rules)
 Agent.md/
+
+# Per-PC dev workspace list (see agent/workspace.example.json)
+agent/workspace.json

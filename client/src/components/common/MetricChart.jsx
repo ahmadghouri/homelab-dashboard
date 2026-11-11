@@ -4,12 +4,14 @@ import { cn } from '@/lib/utils';
 
 // Time series area chart.
 // series: [{ key, label, color }] where color is a CSS color (for example 'var(--chart-1)').
+// yAxisWidth: room for the axis labels; raise it for long labels such as "60 Mbps".
 export function MetricChart({
   data,
   series,
   valueFormatter = (value) => value,
   timeFormatter,
   yDomain = [0, 'auto'],
+  yAxisWidth = 56,
   className,
 }) {
   const config = Object.fromEntries(
@@ -36,7 +38,7 @@ export function MetricChart({
           tickFormatter={timeFormatter}
         />
         <YAxis
-          width={56}
+          width={yAxisWidth}
           tickLine={false}
           axisLine={false}
           domain={yDomain}

@@ -1,12 +1,15 @@
 import {
+  createPaginatedRowModel,
   createSortedRowModel,
   flexRender,
+  rowPaginationFeature,
   rowSortingFeature,
   sortFns,
   tableFeatures,
   useTable,
 } from '@tanstack/react-table';
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -17,12 +20,15 @@ import {
 } from '@/components/ui/table';
 
 const SORT_ICONS = { asc: ArrowUpIcon, desc: ArrowDownIcon };
+const ARIA_SORT = { asc: 'ascending', desc: 'descending' };
 
 // TanStack Table v9: features are declared once, outside components.
-const FEATURES = tableFeatures({
-  rowSortingFeature,
-  sortedRowModel: createSortedRowModel(),
-  sortFns,
+const SORTING = { rowSortingFeature, sortedRowModel: createSortedRowModel(), sortFns };
+const FEATURES = tableFeatures(SORTING);
+const FEATURES_WITH_PAGES = tableFeatures({
+  ...SORTING,
+  rowPaginationFeature,
+  paginatedRowModel: createPaginatedRowModel(),
 });
 
 function SortableHeader({ header }) {
@@ -40,62 +46,110 @@ function SortableHeader({ header }) {
     >
       {content}
       <Icon className="size-3.5 text-muted-foreground" aria-hidden="true" />
-      <span className="sr-only">{sorted ? `sorted ${sorted}ending` : 'sort'}</span>
     </button>
   );
 }
 
-// Sortable table on top of TanStack Table. Filtering and pagination are added when a page needs them.
-// columns: TanStack column definitions. getRowId: stable id for each row.
-export function DataTable({ columns, data, getRowId, initialSorting = [], emptyMessage = 'No data' }) {
+function Pagination({ table }) {
+  const pageCount = table.getPageCount();
+  if (pageCount <= 1) {
+    return null;
+  }
+  const { pageIndex } = table.state.pagination;
+  return (
+    <div className="flex items-center justify-between gap-2 pt-3 text-sm text-muted-foreground">
+      <span>
+        {table.getRowCount()} rows · page {pageIndex + 1} of {pageCount}
+      </span>
+      <div className="flex gap-1">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+          aria-label="Previous page"
+        >
+          <ChevronLeftIcon aria-hidden="true" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+          aria-label="Next page"
+        >
+          <ChevronRightIcon aria-hidden="true" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Sortable table on top of TanStack Table. Filter the `data` in the parent when needed.
+// columns: TanStack column definitions (meta.className styles a column's cells).
+// pageSize: turns on pagination when set.
+export function DataTable({
+  columns,
+  data,
+  getRowId,
+  initialSorting = [],
+  pageSize,
+  emptyMessage = 'No data',
+}) {
   const table = useTable({
-    features: FEATURES,
+    features: pageSize ? FEATURES_WITH_PAGES : FEATURES,
     data,
     columns,
     getRowId,
-    initialState: { sorting: initialSorting },
+    // Live data refreshes often; keep the user's page and sorting when it does.
+    autoResetAll: false,
+    initialState: {
+      sorting: initialSorting,
+      ...(pageSize ? { pagination: { pageIndex: 0, pageSize } } : {}),
+    },
   });
 
   const rows = table.getRowModel().rows;
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead
-                key={header.id}
-                aria-sort={
-                  { asc: 'ascending', desc: 'descending' }[header.column.getIsSorted()] ?? undefined
-                }
-                className={header.column.columnDef.meta?.className}
-              >
-                {header.isPlaceholder ? null : <SortableHeader header={header} />}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {rows.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={columns.length} className="h-20 text-center text-muted-foreground">
-              {emptyMessage}
-            </TableCell>
-          </TableRow>
-        ) : (
-          rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getAllCells().map((cell) => (
-                <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+    <div>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  aria-sort={ARIA_SORT[header.column.getIsSorted()]}
+                  className={header.column.columnDef.meta?.className}
+                >
+                  {header.isPlaceholder ? null : <SortableHeader header={header} />}
+                </TableHead>
               ))}
             </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-20 text-center text-muted-foreground">
+                {emptyMessage}
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getAllCells().map((cell) => (
+                  <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      {pageSize && <Pagination table={table} />}
+    </div>
   );
 }

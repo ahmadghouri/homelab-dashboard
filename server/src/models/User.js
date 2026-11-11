@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: USER_ROLES, default: 'viewer' },
     lastLoginAt: { type: Date },
+    passwordChangedAt: { type: Date, select: false },
   },
   {
     timestamps: true,
@@ -25,6 +26,7 @@ const userSchema = new mongoose.Schema(
         delete ret._id;
         delete ret.__v;
         delete ret.passwordHash;
+        delete ret.passwordChangedAt;
         return ret;
       },
     },

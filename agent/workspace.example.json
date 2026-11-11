@@ -1,0 +1,36 @@
+{
+  "projects": [
+    {
+      "id": "homelab-api",
+      "name": "Homelab API",
+      "type": "node",
+      "cwd": "C:/path/to/homelab/server",
+      "command": ["npm", "run", "dev"],
+      "port": 4000,
+      "env": { "NODE_ENV": "development" },
+      "logFile": null
+    },
+    {
+      "id": "shop-laravel",
+      "name": "Shop (Laravel)",
+      "type": "laravel",
+      "cwd": "C:/path/to/shop",
+      "command": ["php", "artisan", "serve", "--port=8000"],
+      "port": 8000,
+      "env": {},
+      "logFile": "C:/path/to/shop/storage/logs/laravel.log"
+    },
+    {
+      "id": "ml-notebook",
+      "name": "Python API",
+      "type": "python",
+      "cwd": "C:/path/to/python-api",
+      "command": ["python", "-m", "uvicorn", "main:app", "--port", "8001"],
+      "port": 8001,
+      "logFile": null
+    }
+  ],
+  "services": [
+    { "id": "mongodb", "name": "MongoDB", "serviceName": "MongoDB", "port": 27017 }
+  ]
+}

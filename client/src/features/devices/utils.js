@@ -5,7 +5,3 @@ export function fullestDisk(disks) {
   }
   return disks.reduce((fullest, disk) => (disk.usedPct > fullest.usedPct ? disk : fullest));
 }
-
-export function isAdmin(user) {
-  return user?.role === 'admin';
-}

@@ -7,8 +7,11 @@ import {
   renameDevice,
   toDeviceResponse,
 } from '../services/deviceService.js';
+import { onDeviceRemoved } from '../services/alertEngine.js';
 import { getMetricHistory } from '../services/metricsService.js';
-import { disconnectAgent, emitToDashboard } from '../sockets/registry.js';
+import { clearMultiLink } from '../services/multiLinkService.js';
+import { clearWorkspace } from '../services/workspaceService.js';
+import { disconnectAgent, emitToDashboard, updateAgentDeviceName } from '../sockets/registry.js';
 
 export async function getDevices(req, res) {
   const devices = await listDevices();
@@ -28,6 +31,7 @@ export async function postDevice(req, res) {
 
 export async function patchDevice(req, res) {
   const device = await renameDevice(req.params.id, req.body);
+  updateAgentDeviceName(device.id, device.name);
   res.json({ device: toDeviceResponse(device) });
 }
 
@@ -35,6 +39,9 @@ export async function removeDevice(req, res) {
   // Disconnect first, so no more metrics arrive for a device that is being deleted.
   disconnectAgent(req.params.id);
   await deleteDevice(req.params.id);
+  await onDeviceRemoved(req.params.id);
+  clearWorkspace(req.params.id);
+  clearMultiLink(req.params.id);
   emitToDashboard('device:deleted', { deviceId: req.params.id });
   res.status(204).end();
 }

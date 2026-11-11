@@ -1,17 +1,19 @@
 import {
-  ArchiveIcon,
   BellIcon,
+  CableIcon,
   GaugeIcon,
   GlobeIcon,
+  HardDriveIcon,
   LayoutDashboardIcon,
   MonitorIcon,
+  RouterIcon,
   ServerIcon,
   SettingsIcon,
+  SquareTerminalIcon,
   WifiIcon,
 } from 'lucide-react';
 
-// Single source for sidebar links, page titles, and placeholder pages.
-// `milestone` marks pages that are not built yet (see PENDING.md).
+// Single source for sidebar links and page titles.
 export const NAV_ITEMS = [
   {
     path: '/',
@@ -30,42 +32,54 @@ export const NAV_ITEMS = [
     title: 'Network',
     icon: WifiIcon,
     description: 'Everything connected to your WiFi, with alerts for unknown devices.',
-    milestone: 'M3',
   },
   {
     path: '/internet',
     title: 'Internet',
     icon: GlobeIcon,
-    description: 'Speed test history and downtime log.',
-    milestone: 'M5',
+    description: 'Internet speed history and downtime log.',
   },
   {
     path: '/services',
     title: 'Services',
     icon: ServerIcon,
     description: 'Up / down status and response time of websites and services.',
-    milestone: 'M5',
   },
   {
-    path: '/backups',
-    title: 'Backups',
-    icon: ArchiveIcon,
-    description: 'Scheduled backups, history, and restore.',
-    milestone: 'M7',
+    path: '/drive',
+    title: 'Drive',
+    icon: HardDriveIcon,
+    description: 'Files stored across all connected Google Drive accounts.',
+  },
+  {
+    path: '/workspace',
+    title: 'Workspace',
+    icon: SquareTerminalIcon,
+    description: 'Dev projects, Docker containers, services, ports, and logs on each PC.',
+  },
+  {
+    path: '/router',
+    title: 'Router',
+    icon: RouterIcon,
+    description: 'Per-device usage, priority, blocking, internet lines, and DNS ad blocking.',
+  },
+  {
+    path: '/multilink',
+    title: 'Multi-Link',
+    icon: CableIcon,
+    description: 'Use Wi-Fi, Ethernet, and phone tethering together on a PC.',
   },
   {
     path: '/alerts',
     title: 'Alerts',
     icon: BellIcon,
     description: 'Open and resolved alerts, and alert rules.',
-    milestone: 'M4',
   },
   {
     path: '/settings',
     title: 'Settings',
     icon: SettingsIcon,
-    description: 'Telegram alerts, network scan, data retention, and users.',
-    milestone: 'M4',
+    description: 'Telegram alerts, network scan, users, and your account.',
   },
 ];
 

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { CommandLog } from '../models/CommandLog.js';
 import { Device } from '../models/Device.js';
 import { MetricSample } from '../models/MetricSample.js';
 import { HttpError } from '../utils/httpError.js';
@@ -62,7 +63,11 @@ export async function regenerateAgentToken(id) {
 
 export async function deleteDevice(id) {
   const device = await findDeviceOrThrow(id);
-  await Promise.all([device.deleteOne(), MetricSample.deleteMany({ deviceId: device._id })]);
+  await Promise.all([
+    device.deleteOne(),
+    MetricSample.deleteMany({ deviceId: device._id }),
+    CommandLog.deleteMany({ deviceId: device._id }),
+  ]);
   clearLiveMetrics(device.id);
 }
 
@@ -81,7 +86,14 @@ export function updateDeviceInfo(id, info) {
   return Device.findByIdAndUpdate(id, info, { returnDocument: 'after' });
 }
 
-// Agents cannot be connected right after a server start.
-export function markAllDevicesOffline() {
-  return Device.updateMany({ status: 'online' }, { status: 'offline' });
+// Agents cannot be connected right after a server start, and commands that were
+// waiting for an answer when the server stopped will never get one.
+export async function markAllDevicesOffline() {
+  await Promise.all([
+    Device.updateMany({ status: 'online' }, { status: 'offline' }),
+    CommandLog.updateMany(
+      { status: 'pending' },
+      { status: 'failed', output: 'Server restarted', finishedAt: new Date() },
+    ),
+  ]);
 }

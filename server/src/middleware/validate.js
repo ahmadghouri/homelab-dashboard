@@ -5,7 +5,9 @@ import { HttpError } from '../utils/httpError.js';
 function parseOrThrow(schema, value) {
   const result = schema.safeParse(value ?? {});
   if (!result.success) {
-    throw new HttpError(400, 'Invalid request', z.flattenError(result.error).fieldErrors);
+    const { formErrors, fieldErrors } = z.flattenError(result.error);
+    // Whole-object rules (refine) have no field, so their message becomes the main message.
+    throw new HttpError(400, formErrors[0] ?? 'Invalid request', fieldErrors);
   }
   return result.data;
 }
