@@ -3,6 +3,15 @@ import { User } from '../models/User.js';
 import { verifyAuthToken } from '../services/authService.js';
 import { HttpError } from '../utils/httpError.js';
 
+// A password change signs out every session created before it.
+// JWT "iat" is in whole seconds, so compare at second precision.
+export function isTokenOlderThanPassword(payload, user) {
+  if (!user.passwordChangedAt) {
+    return false;
+  }
+  return payload.iat < Math.floor(user.passwordChangedAt.getTime() / 1000);
+}
+
 export async function requireAuth(req, res, next) {
   const payload = verifyAuthToken(req.cookies?.[AUTH_COOKIE_NAME]);
   if (!payload) {
@@ -10,8 +19,8 @@ export async function requireAuth(req, res, next) {
   }
 
   // Load the user on every request so deleted users or role changes apply immediately.
-  const user = await User.findById(payload.sub);
-  if (!user) {
+  const user = await User.findById(payload.sub).select('+passwordChangedAt');
+  if (!user || isTokenOlderThanPassword(payload, user)) {
     throw new HttpError(401, 'Not authenticated');
   }
 

@@ -1,10 +1,40 @@
 import { Router } from 'express';
+import { alertRoutes, alertRuleRoutes } from './alertRoutes.js';
 import { authRoutes } from './authRoutes.js';
 import { deviceRoutes } from './deviceRoutes.js';
 import { healthRoutes } from './healthRoutes.js';
+import { internetRoutes } from './internetRoutes.js';
+import { dnsRoutes } from './dnsRoutes.js';
+import { networkRoutes } from './networkRoutes.js';
+import { publicShareRoutes } from './publicShareRoutes.js';
+import { reportRoutes } from './reportRoutes.js';
+import { routerRoutes } from './routerRoutes.js';
+import { serviceRoutes } from './serviceRoutes.js';
+import { settingsRoutes } from './settingsRoutes.js';
+import { storageAccountRoutes } from './storageAccountRoutes.js';
+import { storageContentRoutes } from './storageContentRoutes.js';
+import { storageFileRoutes } from './storageFileRoutes.js';
+import { storageUploadRoutes } from './storageUploadRoutes.js';
+import { userRoutes } from './userRoutes.js';
 
 export const apiRoutes = Router();
 
 apiRoutes.use('/health', healthRoutes);
 apiRoutes.use('/auth', authRoutes);
 apiRoutes.use('/devices', deviceRoutes);
+apiRoutes.use('/network', networkRoutes);
+apiRoutes.use('/internet', internetRoutes);
+apiRoutes.use('/services', serviceRoutes);
+apiRoutes.use('/reports', reportRoutes);
+apiRoutes.use('/router', routerRoutes);
+apiRoutes.use('/dns', dnsRoutes);
+// Drive (M11). Public share links need no login; everything else checks login and Drive access.
+apiRoutes.use('/public', publicShareRoutes);
+apiRoutes.use('/storage', storageAccountRoutes);
+apiRoutes.use('/storage/uploads', storageUploadRoutes);
+apiRoutes.use('/storage/content', storageContentRoutes);
+apiRoutes.use('/storage', storageFileRoutes);
+apiRoutes.use('/alerts', alertRoutes);
+apiRoutes.use('/alert-rules', alertRuleRoutes);
+apiRoutes.use('/settings', settingsRoutes);
+apiRoutes.use('/users', userRoutes);

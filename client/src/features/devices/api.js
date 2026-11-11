@@ -32,3 +32,15 @@ export async function regenerateDeviceToken(id) {
   const data = await apiClient.post(`/devices/${id}/token`);
   return data.token;
 }
+
+// Returns the command log. Its `status` (success, failed, timeout) is the result;
+// failed and timeout are not HTTP errors.
+export async function sendDeviceCommand({ id, command }) {
+  const data = await apiClient.post(`/devices/${id}/commands`, { command });
+  return data.command;
+}
+
+export async function getDeviceCommands(id, { signal } = {}) {
+  const data = await apiClient.get(`/devices/${id}/commands`, { signal });
+  return data.commands;
+}

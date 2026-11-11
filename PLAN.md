@@ -17,7 +17,6 @@ A person running a few PCs, a home WiFi network, and a small server has no singl
 - Unknown devices join the WiFi and nobody knows.
 - The internet goes down or gets slow, and there is no record to show the ISP.
 - A service (website, database) stops, and nobody knows until someone complains.
-- Backups are manual, so they are often skipped.
 
 Existing tools (Zabbix, Grafana, Uptime Kuma, Pi-hole) each solve one part, are complex to set up, and are built for companies, not homes or small labs.
 
@@ -29,9 +28,8 @@ One web dashboard that:
 2. Scans the network and alerts on unknown devices.
 3. Tracks internet speed and downtime history.
 4. Checks whether services and websites are up.
-5. Runs scheduled backups and allows restore.
-6. Sends alerts to the phone through a Telegram bot.
-7. Allows safe remote actions (lock, restart, shutdown) on PCs.
+5. Sends alerts to the phone through a Telegram bot.
+6. Allows safe remote actions (lock, restart, shutdown) on PCs.
 
 ## 3. Objectives
 
@@ -84,12 +82,11 @@ One web dashboard that:
 | Module | Package | Runs on |
 |---|---|---|
 | PC metrics | `systeminformation` | Agent |
-| Network scan | `local-devices` (ARP table) + ICMP ping | Server |
+| Network scan | Built-in `dgram` (UDP sweep) + ARP table, `oui-data` for vendors | Server |
 | Internet speed | `speedtest-net` (or Ookla CLI through `child_process`) | Server |
 | Service checks | built-in `fetch` (HTTP) + `net` (TCP) | Server |
 | Scheduling | `node-cron` | Server and agent |
-| Backups | `archiver` (zip) | Agent |
-| Alerts | `node-telegram-bot-api` | Server |
+| Alerts | Telegram Bot API through built-in `fetch` | Server |
 | Security | `helmet`, `express-rate-limit`, `cors` | Server |
 
 Packages are installed only when the module that needs them is built.
@@ -119,7 +116,7 @@ flowchart LR
     A1 -- "metrics every 5s" --> WS
     A2 --> WS
     A3 --> WS
-    WS -- "commands (lock, shutdown, backup)" --> A1
+    WS -- "commands (lock, restart, shutdown)" --> A1
     API <--> DB
     WS <--> DB
     JOBS <--> DB
@@ -132,8 +129,8 @@ flowchart LR
 
 | Component | Responsibility |
 |---|---|
-| **Agent** | Collects system metrics, sends them to the server, runs approved commands, runs backups of local folders. |
-| **Server (API)** | Auth, CRUD for devices, services, backup jobs, alert rules, settings. Serves history data. |
+| **Agent** | Collects system metrics, sends them to the server, runs approved commands. |
+| **Server (API)** | Auth, CRUD for devices, services, alert rules, users, settings. Serves history data. |
 | **Server (Socket.io)** | Receives live metrics from agents, pushes live data to browsers, sends commands to agents. |
 | **Server (Schedulers)** | Network scan, speed test, service checks, alert rule evaluation, old data cleanup. |
 | **Dashboard** | Shows everything, lets the admin configure and act. |
@@ -220,18 +217,11 @@ flowchart TD
 ### 7.6 Remote command (lock, restart, shutdown)
 
 1. Admin clicks **Shutdown** on a device page and confirms it in a dialog.
-2. API checks that the user is an admin and the command is in the **whitelist** (`lock`, `restart`, `shutdown`, `run-backup`).
+2. API checks that the user is an admin and the command is in the **whitelist** (`lock`, `restart`, `shutdown`, `cancel_shutdown`).
 3. Server sends `agent:command` to that agent only.
 4. Agent runs the matching fixed OS command (never raw text from the server) and replies with the result.
 5. The command and its result are saved in **CommandLog** for audit.
 
-### 7.7 Backup
-
-1. Admin creates a backup job: device, source folders, destination, schedule (cron), how many copies to keep.
-2. At the scheduled time, the server sends `agent:backup` to the agent.
-3. Agent zips the folders, saves them to the destination, and deletes copies older than the keep limit.
-4. Agent reports success or failure and the size. A failure creates an alert.
-5. Restore: admin selects a backup run and clicks **Restore**, and the agent unzips it to a chosen folder.
 
 ---
 
@@ -241,8 +231,6 @@ flowchart TD
 erDiagram
     USER ||--o{ COMMAND_LOG : runs
     DEVICE ||--o{ METRIC_SAMPLE : has
-    DEVICE ||--o{ BACKUP_JOB : has
-    BACKUP_JOB ||--o{ BACKUP_RUN : produces
     DEVICE ||--o{ COMMAND_LOG : receives
     SERVICE ||--o{ SERVICE_CHECK : has
     ALERT_RULE ||--o{ ALERT : fires
@@ -257,9 +245,7 @@ erDiagram
 | **SpeedTest** | timestamp, downloadMbps, uploadMbps, pingMs, success |
 | **Service** | name, type (`http` / `tcp`), target (URL or host:port), intervalSec, expectedStatus, enabled |
 | **ServiceCheck** | serviceId, timestamp, up (bool), responseMs, error. TTL index. |
-| **BackupJob** | deviceId, name, sources[], destination, cron, keepLast, enabled |
-| **BackupRun** | jobId, startedAt, finishedAt, status, sizeBytes, filePath, error |
-| **AlertRule** | name, type (`cpu`, `ram`, `disk`, `temp`, `offline`, `service_down`, `new_device`, `backup_failed`), threshold, durationSec, targetId (optional), enabled |
+| **AlertRule** | name, type (`cpu`, `ram`, `disk`, `temp`, `offline`, `service_down`, `new_device`, `internet_down`), threshold, durationSec, targetId (optional), enabled |
 | **Alert** | ruleId, targetId, message, severity, status (`open` / `resolved`), createdAt, resolvedAt, notified |
 | **CommandLog** | userId, deviceId, command, status, output, createdAt |
 | **Settings** | telegramChatId, scanSubnet, scanIntervalMin, retentionDays |
@@ -294,14 +280,14 @@ All routes except login need a valid JWT. Write routes need the `admin` role.
 | GET / POST | `/api/services` | List or add services |
 | PATCH / DELETE | `/api/services/:id` | Edit or remove |
 | GET | `/api/services/:id/checks?range=` | Uptime history |
-| GET / POST | `/api/backups/jobs` | List or create jobs |
-| PATCH / DELETE | `/api/backups/jobs/:id` | Edit or remove |
-| POST | `/api/backups/jobs/:id/run` | Run now |
-| GET | `/api/backups/runs` | Backup history |
-| POST | `/api/backups/runs/:id/restore` | Restore |
 | GET | `/api/alerts?status=` | Alert list |
 | PATCH | `/api/alerts/:id` | Acknowledge or resolve |
-| GET / POST / PATCH / DELETE | `/api/alert-rules` | Manage rules |
+| GET / PATCH | `/api/alert-rules` | Fixed set of 6 rules: turn on / off, change limit, wait time, severity |
+| POST | `/api/alerts/:id/acknowledge` | Mark an alert as seen |
+| POST | `/api/alerts/:id/resolve` | Close an alert by hand |
+| GET / POST / PATCH / DELETE | `/api/users` | Manage users (admin) |
+| POST | `/api/auth/change-password` | Change own password, signs out other sessions |
+| GET | `/api/settings/telegram/chats` | Find the chat ID after sending /start to the bot |
 | GET / PATCH | `/api/settings` | App settings |
 | POST | `/api/settings/telegram/test` | Send test message |
 
@@ -313,14 +299,15 @@ All routes except login need a valid JWT. Write routes need the `admin` role.
 | `agent:metrics` | Agent → Server | cpu, ram, disks, temp, battery, net, topProcesses |
 | `agent:command` | Server → Agent | commandId, command |
 | `agent:command:result` | Agent → Server | commandId, status, output |
-| `agent:backup` | Server → Agent | runId, sources, destination, keepLast |
-| `agent:backup:result` | Agent → Server | runId, status, sizeBytes, filePath, error |
 | `device:metrics` | Server → Dashboard | deviceId + latest metrics |
 | `device:status` | Server → Dashboard | deviceId, online/offline |
 | `device:updated` | Server → Dashboard | device (hardware info after the agent hello) |
 | `device:deleted` | Server → Dashboard | deviceId |
 | `alert:new` | Server → Dashboard | alert |
-| `network:update` | Server → Dashboard | changed network devices |
+| `alert:resolved` | Server → Dashboard | alert |
+| `alert:updated` | Server → Dashboard | alert (acknowledged) |
+| `network:scan` | Server → Dashboard | scan started |
+| `network:update` | Server → Dashboard | scan finished or a device changed (client refetches) |
 
 Agents and browsers use separate Socket.io namespaces (`/agent` and `/dashboard`), each with its own auth.
 
@@ -335,11 +322,10 @@ Agents and browsers use separate Socket.io namespaces (`/agent` and `/dashboard`
 | **Login** | Email, password |
 | **Overview** | Status cards (PCs online, network devices, internet speed, services up, open alerts), mini charts, recent alerts |
 | **Devices** | Grid of PC cards with live CPU / RAM / disk bars and an online dot |
-| **Device detail** | Live charts, history range switch (1h / 24h / 7d), specs, top processes, action buttons (lock, restart, shutdown), backup jobs of this PC |
+| **Device detail** | Live charts, history range switch (1h / 24h / 7d), specs, top processes, power actions (lock, restart, shutdown, cancel) and command history |
 | **Network** | Table of all devices on WiFi (name, IP, MAC, vendor, trusted, last seen), "Scan now", filter unknown |
 | **Internet** | Speed chart over time, downtime list, "Run test now" |
 | **Services** | List with up/down status, response time, uptime % (24h, 7d) |
-| **Backups** | Jobs, run history, run now, restore |
 | **Alerts** | Open and resolved alerts, alert rules editor |
 | **Settings** | Telegram setup and test, scan subnet, data retention, users, password change |
 
@@ -354,9 +340,9 @@ Agents and browsers use separate Socket.io namespaces (`/agent` and `/dashboard`
 | Network   |  | 3/4 on | | 12 dev | | 48Mbps | |   2    | |
 | Internet  |  +--------+ +--------+ +--------+ +--------+ |
 | Services  |                                              |
-| Backups   |  +-------------------------+ +-------------+ |
-| Alerts    |  | CPU / RAM (live chart)  | | Recent      | |
-| Settings  |  |                         | | alerts      | |
+| Alerts    |  +-------------------------+ +-------------+ |
+| Settings  |  | CPU / RAM (live chart)  | | Recent      | |
+|           |  |                         | | alerts      | |
 |           |  +-------------------------+ +-------------+ |
 +-----------+----------------------------------------------+
 ```
@@ -411,11 +397,11 @@ shadcn/ui components are copied into the project with the CLI (`npx shadcn@lates
 | `StatusBadge` (online / offline / up / down / warning) | `badge` + icon | Everywhere |
 | `UsageBar` (CPU, RAM, disk with color by threshold) | `progress` | Device cards, detail |
 | `MetricChart` (line/area chart with range tabs) | `chart`, `tabs` | Device detail, internet, services |
-| `DataTable` (sort, filter, paginate) | `table` + TanStack Table | Network, services, alerts, backups, command log |
+| `DataTable` (sort, filter, paginate) | `table` + TanStack Table | Network, services, alerts, users, command log |
 | `ConfirmDialog` | `alert-dialog` | Shutdown, delete, restore |
 | `PageHeader` (title, description, actions) | `breadcrumb`, `button` | Every page |
 | `EmptyState` / `ErrorState` | `card`, `button` | Every list |
-| `FormDialog` (add / edit forms) | `dialog`, `field` | Add device, service, backup job, alert rule |
+| `FormDialog` (add / edit forms) | `dialog`, `field` | Add device, service, user, alert rule |
 | `ThemeToggle` | `dropdown-menu` | Topbar |
 
 ### 11.5 Frontend data flow (TanStack Query)
@@ -491,7 +477,7 @@ homelab-dashboard/
 │       │   ├── ui/             shadcn components (generated by CLI)
 │       │   └── common/         Reusable app components (StatCard, StatusBadge, DataTable, ...)
 │       ├── features/
-│       │   └── devices/        Same shape for network/, internet/, services/, backups/, alerts/, settings/, auth/
+│       │   └── devices/        Same shape for network/, internet/, services/, alerts/, settings/, auth/
 │       │       ├── api.js          API service functions
 │       │       ├── queryKeys.js    Query key factory
 │       │       ├── hooks/          useDevices, useDevice, useAddDevice, ...
@@ -518,7 +504,6 @@ homelab-dashboard/
 │   └── src/
 │       ├── collectors/     metrics
 │       ├── commands/       whitelisted actions
-│       ├── backup/
 │       └── index.js
 ├── docs/                   Diagrams, report, screenshots
 ├── .claude/rules/          AI agent rules
@@ -543,9 +528,13 @@ The project root is `Desktop/test`. `client/` and `server/` match the scoped rul
 | **Mid evaluation** | | ~12 | Demo M1 to M4 |
 | M5 | Internet + service monitoring | 13 to 15 | Speed tests, uptime checks |
 | M6 | Remote commands | 16 to 17 | Lock, restart, shutdown with audit log |
-| M7 | Backups | 18 to 20 | Scheduled backups, restore |
-| M8 | Polish, security, testing | 21 to 23 | Tests, responsive UI, hardening |
-| M9 | Deployment + documentation | 24 to 26 | Live setup, FYP report, viva demo |
+| M7 | Developer Workspace Manager | 18 to 19 | Projects, Docker, services, ports, logs per PC |
+| M8 | Network Pro | 20 | Topology map, packet loss, ISP PDF report |
+| M9 | Router integration (optional) | 21 | Usage, bandwidth priority, block, WAN status, AdGuard Home |
+| M10 | Multi-Link Manager | 22 | Wi-Fi + Ethernet + phone together: load-balancing proxy, per-line health, failover, data caps |
+| M11 | Drive (Storage Hub) | 23 to 24 | Many Google Drive accounts as one store, per-user permissions, uploads, previews, sharing |
+| M12 | Polish, security, testing | 25 | Tests, responsive UI, hardening |
+| M13 | Deployment + documentation | 26 | Live setup, FYP report, viva demo |
 
 Detailed tasks are in [PENDING.md](PENDING.md).
 

@@ -17,66 +17,57 @@ How to use:
 - [ ] Draw final diagrams for the FYP proposal (architecture, ERD, flows) into `docs/`
 - [ ] Submit the FYP proposal
 
-## M1 and M2
+## M1 to M6
 
 Done (see DONE.md). Left over:
 
-- [ ] Test the agent on Linux (tested on Windows 11 only)
-- [ ] Agent: run at startup as a service (moved to M9)
-- [ ] `DataTable`: add filter and pagination when the Network page needs them (M3)
-- [ ] Main JS chunk is about 620 kB: split vendor code or lazy load more pages (M8)
-- [ ] Change password + user management in Settings (M4)
+- [ ] **You:** create a Telegram bot with @BotFather, put `TELEGRAM_BOT_TOKEN` in `server/.env`, restart the server, then set the chat ID in Settings > Notifications and send a test message (the code is done, but it was not tested with a real bot because no token was available)
+- [ ] **You:** to use power actions on a PC, set `REMOTE_COMMANDS=on` in that PC's `agent/.env` and restart its agent (off by default on purpose)
+- [ ] Prepare the mid-evaluation demo (M1 to M4)
+- [ ] Test the agent, network scanner, and remote commands on Linux (tested on Windows 11 only; restart / shutdown were only tested in dry-run mode)
+- [ ] Agent: run at startup as a service (M13)
+- [ ] Network: device names. Reverse DNS rarely works on home networks; try mDNS / NetBIOS names
+- [ ] Network: option to ignore devices with private (random) MACs, which change and can cause repeat "unknown device" alerts on busy networks
+- [ ] Alerts: per-device rules (today every rule applies to all PCs)
+- [ ] Alerts: a PC offline rule turned on later does not start timers for PCs that are already offline (they are picked up at the next status change or server restart)
+- [ ] Services: response time chart axis may need more width for long values (Internet chart already widened)
 
-## M3: Network scanner
+## M7 to M9
 
-- [ ] Server: NetworkDevice model
-- [ ] Server: scanner service (ping sweep + ARP table + MAC vendor lookup)
-- [ ] Server: scheduled scan every 5 minutes + "scan now" route
-- [ ] Server: detect new MAC and emit `network:update`
-- [ ] Client: network feature hooks (`useNetworkDevices`, `useUpdateNetworkDevice`, `useScanNow`), invalidate on `network:update`
-- [ ] Client: Network page (`DataTable`, filter unknown, rename, mark trusted)
+Done (see DONE.md). Left over:
 
-## M4: Alerts + Telegram
+- [ ] **You:** to control dev projects on a PC, copy `agent/workspace.example.json` to `agent/workspace.json`, list your projects, set `WORKSPACE_CONTROL=on` in that PC's `agent/.env`, and run the agent with `npm start` (under `npm run dev` nodemon can stop projects the agent started)
+- [ ] **You (optional):** router features need your own MikroTik router (RouterOS 7, REST API on, a dedicated user) in `server/.env`; DNS ad blocking needs AdGuard Home. Both were tested only against mock servers
+- [ ] The quality monitor pings the default gateway every minute; on a network you do not own, remove the gateway target in `server/src/services/qualityService.js` if pings to the router are not wanted
+- [ ] Ports list: inside the development sandbox `netstat` hides most listening sockets, so ports 4000 / 5173 were not seen there; check the Workspace ports card on a normal run
+- [ ] Docker, Laravel, and Redis paths are written and unit tested but not run for real (not installed on the dev PC)
+- [ ] Network map: kinds are guesses from vendor names; "Open in table" does not pre-fill the search
+- [ ] Router: settings are not re-applied if the router loses them; queue target is updated only on the next track / priority change when a device's IP changes
+- [ ] ISP PDF: outage table header is not repeated on the second page
 
-- [ ] Create the Telegram bot with BotFather, get chat ID
-- [ ] Server: Telegram service + test message route
-- [ ] Server: AlertRule and Alert models, default rules seed
-- [ ] Server: alert engine (thresholds, duration, no duplicate open alerts, auto resolve)
-- [ ] Server: hook alerts into metrics, offline detection, and network scan
-- [ ] Client: bell icon with unread count, `sonner` toast on `alert:new`, invalidate alert queries
-- [ ] Client: Alerts page and rule editor
-- [ ] Client: Settings page (Telegram setup, test button)
-- [ ] Settings: change password, add / remove users (admin only), viewer role
-- [ ] Prepare mid-evaluation demo (M1 to M4)
+## M10: Multi-Link Manager
 
-## M5: Internet + service monitoring
+Done (see DONE.md). Left over:
 
-- [ ] Server: SpeedTest model, speed test service, scheduled every 30 to 60 min
-- [ ] Server: downtime detection (failed tests or failed pings to 1.1.1.1 / 8.8.8.8)
-- [ ] Client: Internet page (speed chart, downtime list, run now)
-- [ ] Server: Service and ServiceCheck models
-- [ ] Server: HTTP and TCP checker, per-service interval
-- [ ] Server: `service_down` alerts
-- [ ] Client: Services page (status, response time, uptime %)
-- [ ] Client: Overview page with all summary cards
+- [ ] **You:** real test with three lines: Wi-Fi + Ethernet cable + phone over USB tethering, `MULTILINK=on` in `agent/.env`, Windows proxy set to 127.0.0.1:8080, then download a large file with IDM and watch the Multi-Link page
+- [ ] DNS lookups use the normal Windows resolver (only the TCP connection is bound to a line)
+- [ ] Speed test data does not count toward a line's data cap
+- [ ] WebSocket upgrades over plain HTTP proxying are not supported (WebSockets over HTTPS / CONNECT work)
+- [ ] Optional add-on: true bonding of a single connection needs an outside bonding server (VPS)
 
-## M6: Remote commands
+## M11: Drive (Storage Hub)
 
-- [ ] Agent: whitelisted commands (`lock`, `restart`, `shutdown`) mapped per OS
-- [ ] Server: command route (admin only, whitelist check), CommandLog model
-- [ ] Server: send `agent:command`, store `agent:command:result`
-- [ ] Client: action buttons with confirm dialog, command history
+Done (see DONE.md). Left over:
 
-## M7: Backups
+- [ ] **You:** create a Google Cloud OAuth client (Web application), turn on the Google Drive API, add `http://localhost:4000/api/storage/google/callback` as a redirect URI, add your Google accounts as test users, then put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `server/.env` and restart the server (steps are also on the Drive accounts page)
+- [ ] Real test with two real Google accounts: connect, upload a large video, play it with seeking, share link, view-only user
+- [ ] While the Google app is in "Testing" mode, Google expires refresh tokens after 7 days (the account shows "Needs reconnect"); publish the app or reconnect weekly
+- [ ] Files already in a Google Drive are not imported (the `drive.file` scope only sees files uploaded by this app)
+- [ ] One upload goes to one account, so a single file must fit in one account's free space
+- [ ] When the client is served by Express in production (M13), allow Google profile pictures (`lh3.googleusercontent.com`) in the CSP `img-src`
+- [ ] No video thumbnails yet (an icon is shown); image thumbnails load the full image
 
-- [ ] Server: BackupJob and BackupRun models, CRUD routes
-- [ ] Server: schedule jobs with `node-cron`, run now route
-- [ ] Agent: zip sources with `archiver`, keep last N copies
-- [ ] Agent: restore to a chosen folder
-- [ ] Server: `backup_failed` alert
-- [ ] Client: Backups page (jobs, history, run now, restore)
-
-## M8: Polish, security, testing
+## M12: Polish, security, testing
 
 - [ ] Validate all request bodies and agent payloads
 - [ ] Unit tests: alert engine, validators, metric averaging
@@ -88,7 +79,7 @@ Done (see DONE.md). Left over:
 - [ ] Load check with 5 agents
 - [ ] `npm audit` on all packages
 
-## M9: Deployment + documentation
+## M13: Deployment + documentation
 
 - [ ] Run server as a service (PM2 or Docker Compose) on the home server
 - [ ] Run agent at startup on each PC (Windows Task Scheduler / systemd)

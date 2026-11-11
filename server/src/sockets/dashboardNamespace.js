@@ -1,4 +1,5 @@
 import { AUTH_COOKIE_NAME } from '../config/authCookie.js';
+import { isTokenOlderThanPassword } from '../middleware/auth.js';
 import { User } from '../models/User.js';
 import { verifyAuthToken } from '../services/authService.js';
 import { setDashboardNamespace } from './registry.js';
@@ -17,8 +18,8 @@ function readCookie(cookieHeader, name) {
 async function authenticateDashboard(socket, next) {
   try {
     const payload = verifyAuthToken(readCookie(socket.handshake.headers.cookie, AUTH_COOKIE_NAME));
-    const user = payload ? await User.findById(payload.sub) : null;
-    if (!user) {
+    const user = payload ? await User.findById(payload.sub).select('+passwordChangedAt') : null;
+    if (!user || isTokenOlderThanPassword(payload, user)) {
       next(new Error('Not authenticated'));
       return;
     }

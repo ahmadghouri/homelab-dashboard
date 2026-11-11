@@ -4,6 +4,8 @@ export const deviceKeys = {
   details: () => [...deviceKeys.all, 'detail'],
   detail: (id) => [...deviceKeys.details(), id],
   history: (id, range) => [...deviceKeys.all, 'history', id, range],
+  // Nested under the detail key, so removing a device's detail also removes its commands.
+  commands: (id) => [...deviceKeys.detail(id), 'commands'],
   // Client-only: recent live points received over the socket (never fetched).
   live: (id) => [...deviceKeys.all, 'live', id],
 };

@@ -7,7 +7,7 @@ import { useMe } from '@/features/auth/hooks/useMe';
 import { AddDeviceButton } from '@/features/devices/components/AddDeviceDialog';
 import { DeviceCard } from '@/features/devices/components/DeviceCard';
 import { useDevices } from '@/features/devices/hooks/useDevices';
-import { isAdmin } from '@/features/devices/utils';
+import { isAdmin } from '@/features/auth/utils';
 
 function DeviceGrid() {
   const { data: devices, isPending, isError, error, refetch, isRefetching } = useDevices();

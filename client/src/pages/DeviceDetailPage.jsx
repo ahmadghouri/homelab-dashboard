@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMe } from '@/features/auth/hooks/useMe';
+import { CommandHistoryCard } from '@/features/devices/components/CommandHistoryCard';
 import { DeviceActionsMenu } from '@/features/devices/components/DeviceActionsMenu';
 import { HistoryUsageChart, LiveUsageChart } from '@/features/devices/components/DeviceCharts';
 import {
@@ -14,8 +15,10 @@ import {
   TopProcessesCard,
 } from '@/features/devices/components/DeviceDetailsCards';
 import { DeviceLiveStats } from '@/features/devices/components/DeviceLiveStats';
+import { DevicePowerActions } from '@/features/devices/components/DevicePowerActions';
 import { useDevice } from '@/features/devices/hooks/useDevice';
-import { isAdmin } from '@/features/devices/utils';
+import { useCommandLiveUpdates } from '@/features/devices/hooks/useDeviceCommands';
+import { isAdmin } from '@/features/auth/utils';
 import { formatRelativeTime } from '@/lib/format';
 import { NotFoundPage } from './NotFoundPage';
 
@@ -34,6 +37,7 @@ export function DeviceDetailPage() {
   const { id } = useParams();
   const { data: user } = useMe();
   const { data: device, isPending, isError, error, refetch, isRefetching } = useDevice(id);
+  useCommandLiveUpdates(id);
 
   if (isPending) {
     return (
@@ -68,10 +72,19 @@ export function DeviceDetailPage() {
           }
           description={
             isOnline
-              ? `${device.hostname} · ${device.osName}`
+              ? device.hostname
+                ? `${device.hostname} · ${device.osName}`
+                : 'Waiting for the agent to send its details'
               : `Last seen ${formatRelativeTime(device.lastSeenAt)}`
           }
-          actions={isAdmin(user) && <DeviceActionsMenu device={device} />}
+          actions={
+            isAdmin(user) && (
+              <>
+                <DevicePowerActions device={device} />
+                <DeviceActionsMenu device={device} />
+              </>
+            )
+          }
         />
       </div>
 
@@ -88,6 +101,8 @@ export function DeviceDetailPage() {
       </div>
 
       <TopProcessesCard processes={live?.topProcesses} />
+
+      <CommandHistoryCard deviceId={device.id} />
     </>
   );
 }
