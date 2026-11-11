@@ -4,6 +4,22 @@ Completed tasks for the Homelab Dashboard. Newest first. Pending work is in [PEN
 
 ---
 
+## 2026-11-11 (M2: Agent + live PC monitoring)
+
+- [x] Server: `Device` model (agent token stored as a SHA-256 hash, shown only once on create / regenerate)
+- [x] Server: `MetricSample` as a MongoDB time series collection with 30-day automatic expiry
+- [x] Server: `/api/devices` routes: list, get, add (admin), rename (admin), delete with history (admin), new token (admin), history `?range=1h|24h|7d` (bucketed to 1 / 5 / 30 minutes)
+- [x] Server: Socket.io `/agent` namespace (token auth, payloads validated with zod, one connection per device) and `/dashboard` namespace (session cookie auth)
+- [x] Server: live metrics kept in memory, averaged and saved once per minute; offline detected within about 20 seconds (ping 10s + timeout 10s); all devices reset to offline on server start
+- [x] Server: `validateQuery` and `validateObjectId` middleware
+- [x] Agent: CPU, RAM, network every 5s; disks, battery, temperature, top 5 processes every 30s (slow on Windows); hardware info on connect; auto reconnect; clear message for a missing or invalid token
+- [x] Client: shared `dashboardSocket`, `useDashboardSocket`, `useSocketEvent` (React 19 `useEffectEvent`)
+- [x] Client: devices feature (`api`, `queryKeys`, `cache`, `useDevices`, `useDevice`, `useDeviceHistory`, `useDeviceLiveSeries`, `useDeviceLiveUpdates`, mutations); socket events are written into the TanStack Query cache
+- [x] Client: common components `UsageBar`, `MetricChart`, `DataTable` (TanStack Table v9), `FormDialog`, `ConfirmDialog`; `lib/format.js`, `lib/usage.js`; colored chart palette
+- [x] Client: Devices page (live cards), Device detail page (live stats, live chart, history chart with 1h / 24h / 7d, disks, system info, top processes, rename / new token / remove), Add device dialog with one-time token and setup steps
+- [x] Client: Overview "PCs online" card; device detail page lazy loaded (charts in their own chunk)
+- [x] Verified: device API with curl (auth, validation, 400 / 404), agent on Windows 11 sending real data, offline on agent exit, invalid token rejected, headless Chrome test 15/15 (live CPU updates over the socket, detail page, charts, add device + token dialog, remove device, mobile layout, no console errors)
+
 ## 2026-11-11 (GitHub)
 
 - [x] First commit pushed to https://github.com/ahmadghouri/homelab-dashboard (`main`)

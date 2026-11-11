@@ -24,7 +24,6 @@ export const NAV_ITEMS = [
     title: 'Devices',
     icon: MonitorIcon,
     description: 'Live CPU, RAM, disk, and temperature of every PC with the agent.',
-    milestone: 'M2',
   },
   {
     path: '/network',

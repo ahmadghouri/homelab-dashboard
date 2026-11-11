@@ -4,7 +4,7 @@ A self-hosted dashboard to monitor and manage your PCs, home network, and home s
 
 Built with the MERN stack (MongoDB, Express, React, Node.js) as a Final Year Project.
 
-> **Status:** in development. Milestones M0 (setup) and M1 (login + layout) are done. See the [roadmap](#roadmap).
+> **Status:** in development. Login, layout, and live PC monitoring (M0 to M2) are done. See the [roadmap](#roadmap).
 
 ---
 
@@ -26,7 +26,9 @@ Tools like Zabbix, Grafana, or Uptime Kuma each solve one part, but they are bui
 |---|---|
 | Secure login (JWT in httpOnly cookie, rate limited) | Done |
 | Responsive dashboard with sidebar, dark / light / system theme | Done |
-| Live PC monitoring: CPU, RAM, disk, temperature, battery | Planned (M2) |
+| Live PC monitoring: CPU, RAM, disk, network, battery, top processes | Done |
+| Usage history charts (1 hour, 24 hours, 7 days) | Done |
+| Offline detection within about 20 seconds | Done |
 | Network scanner with alerts for unknown devices | Planned (M3) |
 | Alerts on your phone through a Telegram bot | Planned (M4) |
 | Internet speed and downtime history | Planned (M5) |
@@ -41,8 +43,8 @@ Tools like Zabbix, Grafana, or Uptime Kuma each solve one part, but they are bui
 | Frontend | React 19, Vite, Tailwind CSS 4, shadcn/ui, TanStack Query, TanStack Table, React Router, Recharts |
 | Backend | Node.js, Express 5, Mongoose, Zod, JWT, bcryptjs, Helmet |
 | Database | MongoDB |
-| Real-time | Socket.io (planned) |
-| Agent | Node.js script on each monitored PC |
+| Real-time | Socket.io |
+| Agent | Node.js with `systeminformation`, runs on each monitored PC |
 | Alerts | Telegram bot (planned) |
 | Tooling | npm, oxlint, Prettier, nodemon |
 
@@ -158,6 +160,22 @@ npm run dev        # Dashboard on http://localhost:5173
 
 Open **http://localhost:5173** and sign in.
 
+### 5. Connect a PC
+
+1. In the dashboard, open **Devices** and click **Add device**.
+2. Copy the settings shown in the dialog into `agent/.env` on that PC (the token is shown only once).
+3. Start the agent:
+
+```bash
+cd agent
+npm install
+npm start
+```
+
+The PC shows as **Online** within a few seconds. On another PC, replace `localhost` in `SERVER_URL` with the IP address of the computer running the server.
+
+> CPU temperature on Windows needs the agent to run with administrator rights. Without them it shows N/A.
+
 ## Scripts
 
 | Package | Command | What it does |
@@ -169,6 +187,7 @@ Open **http://localhost:5173** and sign in.
 | client | `npm run dev` | Start the dashboard with hot reload |
 | client | `npm run build` | Build for production into `client/dist` |
 | client | `npm run lint` | Lint the code |
+| agent | `npm start` | Start the agent |
 | agent | `npm run dev` | Start the agent with auto reload |
 
 ## API
@@ -179,6 +198,15 @@ Open **http://localhost:5173** and sign in.
 | POST | `/api/auth/login` | No | Sign in, sets the session cookie |
 | POST | `/api/auth/logout` | No | Sign out, clears the cookie |
 | GET | `/api/auth/me` | Yes | Current user |
+| GET | `/api/devices` | Yes | All PCs with their latest live metrics |
+| POST | `/api/devices` | Admin | Add a PC, returns its agent token once |
+| GET | `/api/devices/:id` | Yes | One PC |
+| PATCH | `/api/devices/:id` | Admin | Rename a PC |
+| DELETE | `/api/devices/:id` | Admin | Remove a PC and its history |
+| POST | `/api/devices/:id/token` | Admin | Replace the agent token |
+| GET | `/api/devices/:id/metrics?range=1h\|24h\|7d` | Yes | Usage history |
+
+Live updates use Socket.io: agents connect to the `/agent` namespace with their token, and the dashboard connects to `/dashboard` with the login cookie.
 
 The full planned API is in [PLAN.md, section 9](PLAN.md#9-api-design-rest).
 
@@ -188,6 +216,8 @@ The full planned API is in [PLAN.md, section 9](PLAN.md#9-api-design-rest).
 - The session token is in an `httpOnly`, `SameSite=strict` cookie, so page scripts cannot read it.
 - Login is rate limited (5 failed attempts per 15 minutes).
 - All request bodies are validated on the server.
+- Agent tokens are random 256-bit values, stored only as a hash, and can be replaced at any time.
+- Data sent by agents is validated like any other request.
 - Secrets live only in `.env`, which is not committed.
 - Remote PC commands will be limited to a fixed whitelist and logged.
 
@@ -199,8 +229,8 @@ For remote access, use a VPN such as Tailscale or WireGuard instead of opening p
 |---|---|---|
 | M0 | Planning and project setup | Done |
 | M1 | Login and base layout | Done |
-| M2 | Agent and live PC monitoring | Next |
-| M3 | Network scanner | Planned |
+| M2 | Agent and live PC monitoring | Done |
+| M3 | Network scanner | Next |
 | M4 | Alerts and Telegram | Planned |
 | M5 | Internet and service monitoring | Planned |
 | M6 | Remote commands | Planned |

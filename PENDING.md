@@ -17,37 +17,15 @@ How to use:
 - [ ] Draw final diagrams for the FYP proposal (architecture, ERD, flows) into `docs/`
 - [ ] Submit the FYP proposal
 
-## M1: Auth + base layout
+## M1 and M2
 
-M1 is done (see DONE.md). Moved to the milestone where they are first used, so they are built against real data:
+Done (see DONE.md). Left over:
 
-- `UsageBar`, `MetricChart`, `DataTable`, `FormDialog`, `ConfirmDialog` → M2
-- Change password + user management in Settings → M4
-- API tests for auth (Supertest) → M8
-
-## M2: Agent + live PC monitoring
-
-- [ ] Client: `UsageBar` (shadcn `progress`, color by threshold)
-- [ ] Client: `MetricChart` (shadcn `chart` + range `tabs`)
-- [ ] Client: `DataTable` (TanStack Table: sort, filter, paginate)
-- [ ] Client: `FormDialog` and `ConfirmDialog` (used by Add Device and Remove Device)
-- [ ] Client: route-level code splitting (`React.lazy`) when the chart bundle grows (build warns about a chunk over 500 kB)
-
-- [ ] Server: Device model, add device route that returns a one-time agent token
-- [ ] Server: Socket.io `/agent` namespace with token auth
-- [ ] Agent: connect with token, send `agent:hello`
-- [ ] Agent: collect metrics with `systeminformation`, send `agent:metrics` every 5s
-- [ ] Agent: auto reconnect when the server restarts
-- [ ] Server: forward live metrics to the `/dashboard` namespace
-- [ ] Server: save one averaged MetricSample per minute, TTL index
-- [ ] Server: offline detection (no heartbeat for 30s)
-- [ ] Server: metrics history route (`1h`, `24h`, `7d`)
-- [ ] Client: `useSocket` hook that writes `device:metrics` and `device:status` into the TanStack Query cache
-- [ ] Client: devices feature (`api.js`, `queryKeys.js`, `useDevices`, `useDevice`, `useDeviceMetrics`, `useAddDevice` mutation)
-- [ ] Client: Devices page (`DeviceCard` with `UsageBar` and `StatusBadge`)
-- [ ] Client: Device detail page (live `MetricChart`, history range tabs, specs, top processes `DataTable`)
-- [ ] Client: Add Device `FormDialog` that shows the token once
-- [ ] Test the agent on Windows and on Linux
+- [ ] Test the agent on Linux (tested on Windows 11 only)
+- [ ] Agent: run at startup as a service (moved to M9)
+- [ ] `DataTable`: add filter and pagination when the Network page needs them (M3)
+- [ ] Main JS chunk is about 620 kB: split vendor code or lazy load more pages (M8)
+- [ ] Change password + user management in Settings (M4)
 
 ## M3: Network scanner
 

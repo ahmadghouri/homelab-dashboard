@@ -2,11 +2,16 @@ import { Outlet, useLocation } from 'react-router';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { useDeviceLiveUpdates } from '@/features/devices/hooks/useDeviceLiveUpdates';
+import { useDashboardSocket } from '@/hooks/useDashboardSocket';
 import { AppSidebar } from './AppSidebar';
 import { findNavItem } from './navItems';
 
 export function AppLayout() {
   const { pathname } = useLocation();
+  // Live updates run for the whole logged-in app and stop on logout (unmount).
+  useDashboardSocket();
+  useDeviceLiveUpdates();
   const pageTitle = findNavItem(pathname)?.title ?? '';
 
   return (

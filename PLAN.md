@@ -62,7 +62,7 @@ One web dashboard that:
 | Frontend | React (Vite) + Tailwind CSS | Dashboard UI |
 | UI components | shadcn/ui (Radix UI + Tailwind) | Reusable, accessible components copied into `client/src/components/ui/` |
 | Server state | TanStack Query (`@tanstack/react-query`) | Fetching, caching, refetching, mutations, invalidation |
-| Tables | TanStack Table (`@tanstack/react-table`) | Sorting, filtering, pagination (base of the shadcn Data Table) |
+| Tables | TanStack Table v9 (`@tanstack/react-table`) | Sorting, filtering, pagination. v9 API: `tableFeatures()` + `useTable()` |
 | HTTP client | Native `fetch` wrapper (`client/src/api/client.js`) | Used by API services under TanStack Query |
 | Charts | Recharts through the shadcn `Chart` component | Live and history graphs |
 | Icons | `lucide-react` (comes with shadcn) | Icons |
@@ -252,7 +252,7 @@ erDiagram
 |---|---|
 | **User** | name, email (unique), passwordHash, role (`admin` / `viewer`), createdAt |
 | **Device** (PC with agent) | name, hostname, os, agentTokenHash, status (`online` / `offline`), lastSeen, specs (cpu model, total RAM, disks) |
-| **MetricSample** | deviceId, timestamp, cpu %, ram %, disk[] %, tempC, battery %, netRx, netTx. TTL index. |
+| **MetricSample** | ts, deviceId, cpu %, memPct, tempC, batteryPct, netRxBps, netTxBps. MongoDB time series collection (metaField `deviceId`), expires after 30 days. Disks and processes are live only. |
 | **NetworkDevice** | mac (unique), ip, vendor, customName, trusted (bool), online, firstSeen, lastSeen |
 | **SpeedTest** | timestamp, downloadMbps, uploadMbps, pingMs, success |
 | **Service** | name, type (`http` / `tcp`), target (URL or host:port), intervalSec, expectedStatus, enabled |
@@ -317,6 +317,8 @@ All routes except login need a valid JWT. Write routes need the `admin` role.
 | `agent:backup:result` | Agent → Server | runId, status, sizeBytes, filePath, error |
 | `device:metrics` | Server → Dashboard | deviceId + latest metrics |
 | `device:status` | Server → Dashboard | deviceId, online/offline |
+| `device:updated` | Server → Dashboard | device (hardware info after the agent hello) |
+| `device:deleted` | Server → Dashboard | deviceId |
 | `alert:new` | Server → Dashboard | alert |
 | `network:update` | Server → Dashboard | changed network devices |
 

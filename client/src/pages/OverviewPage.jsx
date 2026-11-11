@@ -4,16 +4,37 @@ import { StatCard } from '@/components/common/StatCard';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Link } from 'react-router';
 import { useMe } from '@/features/auth/hooks/useMe';
+import { useDevices } from '@/features/devices/hooks/useDevices';
 import { useHealth } from '@/features/health/hooks/useHealth';
 
 // Summary cards get real data as each module is built (see PENDING.md).
-const SUMMARY_CARDS = [
-  { title: 'PCs online', icon: MonitorIcon, description: 'Live data after M2 (agent)' },
+const PLANNED_CARDS = [
   { title: 'Network devices', icon: WifiIcon, description: 'Live data after M3 (scanner)' },
   { title: 'Internet speed', icon: GlobeIcon, description: 'Live data after M5' },
   { title: 'Open alerts', icon: BellIcon, description: 'Live data after M4' },
 ];
+
+function PcsOnlineCard() {
+  const { data: devices, isPending, isError } = useDevices();
+  const online = devices?.filter((device) => device.status === 'online').length ?? 0;
+
+  return (
+    <Link
+      to="/devices"
+      className="rounded-xl transition-colors focus-visible:outline-2 focus-visible:outline-ring [&>*]:hover:border-ring/60"
+    >
+      <StatCard
+        title="PCs online"
+        icon={MonitorIcon}
+        isLoading={isPending}
+        value={isError ? '--' : `${online} / ${devices?.length ?? 0}`}
+        description={devices?.length === 0 ? 'Add a PC in Devices' : 'Agents connected now'}
+      />
+    </Link>
+  );
+}
 
 function SystemStatus() {
   const { data, isPending, isError } = useHealth();
@@ -56,7 +77,8 @@ export function OverviewPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {SUMMARY_CARDS.map((card) => (
+        <PcsOnlineCard />
+        {PLANNED_CARDS.map((card) => (
           <StatCard key={card.title} {...card} value="--" />
         ))}
       </div>
